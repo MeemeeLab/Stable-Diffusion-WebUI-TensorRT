@@ -180,18 +180,7 @@ class ProfileSettings:
         )
 
     def get_a1111_batch_dim(self):
-        static_batch = self.bs_min == self.bs_max == self.bs_opt
-        if self.t_max <= 77:
-            return (self.bs_min * 2, self.bs_opt * 2, self.bs_max * 2)
-        elif self.t_max > 77 and static_batch:
-            return (self.bs_opt, self.bs_opt, self.bs_opt)
-        elif self.t_max > 77 and not static_batch:
-            if self.t_opt > 77:
-                return (self.bs_min, self.bs_opt, self.bs_max * 2)
-            return (self.bs_min, self.bs_opt * 2, self.bs_max * 2)
-        else:
-            raise Exception("Uncovered case in get_batch_dim")
-
+        return (self.bs_min * 2, self.bs_opt * 2, self.bs_max * 2)
 
 class ProfilePrests:
     def __init__(self):

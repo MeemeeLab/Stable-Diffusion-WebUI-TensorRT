@@ -12,6 +12,7 @@ from modules import script_callbacks, sd_unet, devices, scripts, shared
 
 import ui_trt
 from utilities import Engine
+from sd_utilities import get_token_count
 from model_manager import TRT_MODEL_DIR, modelmanager
 from datastructures import ModelType
 from scripts.lora import apply_loras
@@ -154,8 +155,8 @@ class TensorRTScript(scripts.Script):
             p.width,
             p.height,
             p.batch_size,
-            77,  # model_type
-        )  # TODO: max_embedding, just ignore?
+            get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77
+        )
         if len(valid_models) == 0:
             gr.Error(
                 f"""No valid profile found for ({model_name}) LOWRES. Please go to the TensorRT tab and generate an engine with the necessary profile. 
@@ -173,8 +174,8 @@ class TensorRTScript(scripts.Script):
                 hr_w,
                 hr_h,
                 p.batch_size,
-                77,  # model_type
-            )  # TODO: max_embedding
+                get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77
+            )
             if len(valid_models_hr) == 0:
                 gr.Error(
                     f"""No valid profile found for ({model_name}) HIRES. Please go to the TensorRT tab and generate an engine with the necessary profile. 
