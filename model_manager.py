@@ -216,7 +216,8 @@ class ModelManager:
         width: int,
         height: int,
         batch_size: int,
-        max_embedding: int,
+        max_embedding_positive: int,
+        max_embedding_negative: int,
     ):
         valid_models = []
         distances = []
@@ -224,7 +225,7 @@ class ModelManager:
         models = self.available_models()
         for i, model in enumerate(models[base_model]):
             valid, distance = model["config"].is_compatible(
-                width, height, batch_size, max_embedding
+                width, height, batch_size, max_embedding_positive, max_embedding_negative
             )
             if valid:
                 valid_models.append(model)

@@ -72,13 +72,13 @@ class ModelConfig:
         return (True, distance)
 
     def is_compatible(
-        self, width: int, height: int, batch_size: int, max_embedding: int
+        self, width: int, height: int, batch_size: int, max_embedding_positive: int, max_embedding_negative: int
     ):
         distance = 0
         sample = self.profile["sample"]
         embedding = self.profile["encoder_hidden_states"]
 
-        batch_size *= 2
+        batch_size *= 2 if max_embedding_positive == max_embedding_negative else 1
         width = width // 8
         height = height // 8
 
@@ -91,8 +91,17 @@ class ModelConfig:
             return (False, distance)
 
         _min_em, _opt_em, _max_em = embedding
-        if _min_em[1] > max_embedding or _max_em[1] < max_embedding:
+        if _min_em[1] > max_embedding_positive or _max_em[1] < max_embedding_positive:
             return (False, distance)
+
+        if _min_em[1] > max_embedding_negative or _max_em[1] < max_embedding_negative:
+            return (False, distance)
+
+        if max_embedding_positive == max_embedding_negative:
+            print("Guessed shape:", (batch_size, 4, height, width), (batch_size, max_embedding_positive, 2048))
+        else:
+            print("Guessed shape: [candidate 1]", (batch_size, 4, height, width), (batch_size, max_embedding_positive, 2048))
+            print("Guessed shape: [candidate 2]", (batch_size, 4, height, width), (batch_size, max_embedding_negative, 2048))
 
         distance = (
             abs(_opt[0] - batch_size)
@@ -180,7 +189,13 @@ class ProfileSettings:
         )
 
     def get_a1111_batch_dim(self):
-        return (self.bs_min * 2, self.bs_opt * 2, self.bs_max * 2)
+        static_batch = self.bs_min == self.bs_max == self.bs_opt
+        if self.t_max > 77 and not static_batch:
+            if self.t_opt > 77:
+                return (self.bs_min, self.bs_opt, self.bs_max * 2)
+            return (self.bs_min, self.bs_opt * 2, self.bs_max * 2)
+        else:
+            return (self.bs_min, self.bs_opt, self.bs_max * 2)
 
 class ProfilePrests:
     def __init__(self):

@@ -155,7 +155,8 @@ class TensorRTScript(scripts.Script):
             p.width,
             p.height,
             p.batch_size,
-            get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77
+            get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77,
+            get_token_count(p.all_negative_prompts, p.steps, p.styles, is_positive=False)[1] // 75 * 77
         )
         if len(valid_models) == 0:
             gr.Error(
@@ -174,7 +175,8 @@ class TensorRTScript(scripts.Script):
                 hr_w,
                 hr_h,
                 p.batch_size,
-                get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77
+                get_token_count(p.all_prompts, p.steps, p.styles)[1] // 75 * 77,
+                get_token_count(p.all_negative_prompts, p.steps, p.styles, is_positive=False)[1] // 75 * 77
             )
             if len(valid_models_hr) == 0:
                 gr.Error(
