@@ -1,5 +1,5 @@
 from functools import reduce
-from modules import shared, extra_networks, prompt_parser
+from modules import shared, extra_networks, prompt_parser, sd_models
 from modules.sd_hijack import model_hijack
 
 def get_token_count(all_prompts, steps, styles, is_positive=True):
@@ -13,5 +13,11 @@ def get_token_count(all_prompts, steps, styles, is_positive=True):
 
     flat_prompts = reduce(lambda list1, list2: list1+list2, prompt_schedules)
     prompts = [prompt_text for step, prompt_text in flat_prompts]
-    token_count, max_length = max([model_hijack.get_prompt_lengths(prompt) for prompt in prompts], key=lambda args: args[0])
+
+    try:
+        token_count, max_length = max([model_hijack.get_prompt_lengths(prompt) for prompt in prompts], key=lambda args: args[0])
+    except:
+        token_count, max_length = max([model_hijack.get_prompt_lengths(prompt, sd_models.model_data.sd_model.cond_stage_model) for prompt in prompts], key=lambda args: args[0])
+
     return token_count, max_length
+
