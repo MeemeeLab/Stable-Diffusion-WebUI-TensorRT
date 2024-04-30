@@ -198,7 +198,7 @@ class TensorRTScript(scripts.Script):
 
         return best, best_hr
 
-    def get_loras(self, p):
+    def get_loras(self, p, force=False):
         lora_pathes = []
         lora_scales = []
 
@@ -213,17 +213,18 @@ class TensorRTScript(scripts.Script):
         p.prompt = _prompt
 
         # check if lora config has changes
-        if self.lora_hash != "".join(loras):
-            self.lora_hash = "".join(loras)
-            self.update_lora = True
-            if self.lora_hash == "":
-                self.lora_refit_dict = {}
+        if not force:
+            if self.lora_hash != "".join(loras):
+                self.lora_hash = "".join(loras)
+                self.update_lora = True
+                if self.lora_hash == "":
+                    self.lora_refit_dict = {}
+                    return
+            else:
                 return
-        else:
-            return
 
         # Get pathes
-        print("Apllying LoRAs: " + str(loras))
+        print("Applying LoRAs: " + str(loras))
         available = modelmanager.available_loras()
         for lora in loras:
             lora_name, lora_scale = lora.split(":")[1:]
@@ -306,10 +307,16 @@ class TensorRTScript(scripts.Script):
             sd_unet.current_unet.profile_idx = self.idx
             sd_unet.current_unet.switch_engine()
 
+            self.update_lora = True
+            self.after_extra_networks_activate(p)
+
     def before_hr(self, p, *args):
         if self.idx != self.hr_idx:
             sd_unet.current_unet.profile_idx = self.hr_idx
             sd_unet.current_unet.switch_engine()
+
+            self.update_lora = True
+            self.after_extra_networks_activate(p)
 
         return super().before_hr(p, *args)  # 4 (Only when HR starts.....)
 
@@ -317,6 +324,8 @@ class TensorRTScript(scripts.Script):
         if self.update_lora and not self.torch_unet:
             self.update_lora = False
             sd_unet.current_unet.apply_loras(self.lora_refit_dict)
+
+            print("Lora applied to current U-Net")
 
 
 def list_unets(l):

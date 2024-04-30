@@ -18,11 +18,13 @@ from optimum.onnx.utils import (
 )
 
 
-from modules import shared
+from modules import shared, devices
 
 from utilities import Engine
 from datastructures import ProfileSettings
 from model_helper import UNetModel
+
+from tqdm import tqdm
 
 
 def apply_lora(model: torch.nn.Module, lora_path: str, inputs: Tuple[torch.Tensor]) -> torch.nn.Module:
@@ -57,7 +59,7 @@ def get_refit_weights(
     # Create initializer data hashes
     initializer_hash_mapping = {}
     onnx_data_mapping = {}
-    for initializer in onnx_opt_model.graph.initializer:
+    for initializer in tqdm(onnx_opt_model.graph.initializer):
         initializer_data = numpy_helper.to_array(
             initializer, base_dir=onnx_opt_dir
         ).astype(np.float16)
@@ -65,7 +67,7 @@ def get_refit_weights(
         initializer_hash_mapping[initializer.name] = initializer_hash
         onnx_data_mapping[initializer.name] = initializer_data
 
-    for torch_name, initializer_name in weight_name_mapping.items():
+    for torch_name, initializer_name in tqdm(weight_name_mapping.items()):
         initializer_hash = initializer_hash_mapping[initializer_name]
         wt = state_dict[torch_name]
 
@@ -92,12 +94,21 @@ def export_lora(
     lora_name: str,
     profile: ProfileSettings,
 ) -> dict:
+    cuda = str(next(shared.sd_model.parameters()).device).startswith("cuda")
+
+    if cuda:
+        shared.sd_model.to("cpu")
+        devices.torch_gc()
+    else:
+        modelobj.unet.to("cpu")
+
     info("Exporting to ONNX...")
     inputs = modelobj.get_sample_input(
         profile.bs_opt * 2,
         profile.h_opt // 8,
         profile.w_opt // 8,
         profile.t_opt,
+        device=("cuda" if cuda else "cpu")
     )
 
     with open(weights_map_path, "r") as fp_wts:
@@ -115,6 +126,9 @@ def export_lora(
             weights_name_mapping,
             weights_shape_mapping,
         )
+
+    if cuda:
+        shared.sd_model.to("cuda")
 
     return refit_dict
 
