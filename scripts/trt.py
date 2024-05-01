@@ -204,7 +204,7 @@ class TensorRTScript(scripts.Script):
 
         # get lora from prompt
         _prompt = p.prompt
-        extra_networks = re.findall("\<(.*?)\>", _prompt)
+        extra_networks = re.findall("<([^<>]*)>", _prompt)
         loras = [net for net in extra_networks if net.startswith("lora")]
 
         # Avoid that extra networks will be loaded
